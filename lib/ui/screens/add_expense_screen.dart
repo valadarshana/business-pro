@@ -1,19 +1,23 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../state/business_state.dart';
+import '../../models/business_models.dart';
+import '../../providers/expense_providers.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_text_field.dart';
 
-class AddExpenseScreen extends StatefulWidget {
-  const AddExpenseScreen({super.key});
+class AddExpenseScreen extends ConsumerStatefulWidget {
+  const AddExpenseScreen({super.key, this.expense});
 
+  final BusinessExpense? expense;
   @override
-  State<AddExpenseScreen> createState() => _AddExpenseScreenState();
+  ConsumerState<AddExpenseScreen> createState() => _AddExpenseScreenState();
 }
 
-class _AddExpenseScreenState extends State<AddExpenseScreen> {
+class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
@@ -22,6 +26,24 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   String? _category;
   String? _paymentMethod;
   DateTime _date = DateTime.now();
+  bool _isSaving = false;
+  String? _errorMessage;
+
+  static const _categories = ['Material', 'Rent', 'Utilities', 'Other'];
+  static const _paymentMethods = ['Cash', 'Card', 'Bank transfer', 'UPI'];
+
+  @override
+  void initState() {
+    super.initState();
+    final expense = widget.expense;
+    if (expense == null) return;
+    _titleController.text = expense.title;
+    _amountController.text = expense.amount.toString();
+    _descriptionController.text = expense.description;
+    _category = expense.category;
+    _paymentMethod = expense.paymentMethod;
+    _date = expense.date;
+  }
 
   @override
   void dispose() {
@@ -31,17 +53,50 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
-  void _saveExpense() {
+  Future<void> _saveExpense() async {
     if (!_formKey.currentState!.validate()) return;
-    BusinessStateScope.of(context).addExpense(
-      title: _titleController.text,
+    final expense = BusinessExpense(
+      id: widget.expense?.id ?? '',
+      title: _titleController.text.trim(),
       category: _category!,
       amount: double.parse(_amountController.text.trim()),
-      description: _descriptionController.text,
+      description: _descriptionController.text.trim(),
       paymentMethod: _paymentMethod!,
       date: _date,
     );
-    Navigator.pop(context);
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+    try {
+      final repository = ref.read(expenseRepositoryProvider);
+      if (widget.expense == null) {
+        await repository.createExpense(expense);
+      } else {
+        await repository.updateExpense(widget.expense!.id, expense);
+      }
+      if (mounted) Navigator.pop(context);
+    } on FirebaseAuthException catch (error) {
+      if (mounted) {
+        setState(
+          () => _errorMessage =
+              error.message ?? 'Please sign in again before saving an expense.',
+        );
+      }
+    } on FirebaseException catch (error) {
+      if (mounted) {
+        setState(
+          () => _errorMessage =
+              error.message ?? 'Firestore error (${error.code}).',
+        );
+      }
+    } on ArgumentError catch (error) {
+      if (mounted) setState(() => _errorMessage = error.message.toString());
+    } on Exception catch (error) {
+      if (mounted) setState(() => _errorMessage = error.toString());
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -49,7 +104,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     return Scaffold(
       body: Column(
         children: [
-          const AppHeader(title: 'Add Expense', showBack: true),
+          AppHeader(
+            title: widget.expense == null ? 'Add Expense' : 'Edit Expense',
+            showBack: true,
+          ),
           Expanded(
             child: Form(
               key: _formKey,
@@ -68,18 +126,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     value: _category,
                     label: 'Category *',
                     icon: Icons.category_outlined,
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'Material',
-                        child: Text('Material'),
-                      ),
-                      DropdownMenuItem(value: 'Rent', child: Text('Rent')),
-                      DropdownMenuItem(
-                        value: 'Utilities',
-                        child: Text('Utilities'),
-                      ),
-                      DropdownMenuItem(value: 'Other', child: Text('Other')),
-                    ],
+                    items: _dropdownItems(_categories, _category),
                     onChanged: (value) => setState(() => _category = value),
                     validator: (value) =>
                         value == null ? 'Select a category' : null,
@@ -108,15 +155,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     value: _paymentMethod,
                     label: 'Payment Method *',
                     icon: Icons.account_balance_wallet_outlined,
-                    items: const [
-                      DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                      DropdownMenuItem(value: 'Card', child: Text('Card')),
-                      DropdownMenuItem(
-                        value: 'Bank transfer',
-                        child: Text('Bank transfer'),
-                      ),
-                      DropdownMenuItem(value: 'UPI', child: Text('UPI')),
-                    ],
+                    items: _dropdownItems(_paymentMethods, _paymentMethod),
                     onChanged: (value) =>
                         setState(() => _paymentMethod = value),
                     validator: (value) =>
@@ -165,7 +204,29 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     onChanged: (date) => setState(() => _date = date),
                   ),
                   const SizedBox(height: 18),
-                  AppButton(label: 'Save Expense', onPressed: _saveExpense),
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _errorMessage!,
+                      style: const TextStyle(
+                        color: AppColors.danger,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  AppButton(
+                    label: _isSaving
+                        ? 'Saving...'
+                        : widget.expense == null
+                        ? 'Save Expense'
+                        : 'Update Expense',
+                    onPressed: _isSaving ? null : _saveExpense,
+                  ),
+                  if (_isSaving) ...[
+                    const SizedBox(height: 12),
+                    const Center(child: CircularProgressIndicator()),
+                  ],
                 ],
               ),
             ),
@@ -180,7 +241,22 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   String? _validAmount(String? value) {
     final amount = double.tryParse(value?.trim() ?? '');
-    if (amount == null || amount <= 0) return 'Enter a valid amount';
+    if (amount == null || !amount.isFinite || amount <= 0) {
+      return 'Enter a valid amount';
+    }
     return null;
+  }
+
+  List<DropdownMenuItem<String>> _dropdownItems(
+    List<String> options,
+    String? selected,
+  ) {
+    final values = [
+      ...options,
+      if (selected != null && !options.contains(selected)) selected,
+    ];
+    return values
+        .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+        .toList();
   }
 }

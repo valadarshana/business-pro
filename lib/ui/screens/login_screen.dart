@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../services/auth_repository.dart';
+import '../../services/auth_error_message.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_text_field.dart';
-import 'main_navigation_screen.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, required this.authRepository});
+
+  final AuthRepository authRepository;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -17,6 +23,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isSigningIn = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -25,12 +33,42 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+    await _runSignIn(
+      () => widget.authRepository.signInWithEmail(
+        email: _emailController.text,
+        password: _passwordController.text,
+      ),
     );
+  }
+
+  Future<void> _loginWithGoogle() =>
+      _runSignIn(widget.authRepository.signInWithGoogle);
+
+  Future<void> _runSignIn(Future<Object?> Function() signIn) async {
+    setState(() {
+      _isSigningIn = true;
+      _errorMessage = null;
+    });
+    try {
+      await signIn();
+      if (mounted) Navigator.of(context).pop();
+    } on FirebaseAuthException catch (error) {
+      if (mounted) {
+        setState(() => _errorMessage = authErrorMessage(error.code));
+      }
+    } on FirebaseException catch (error) {
+      if (mounted) setState(() => _errorMessage = error.message ?? error.code);
+    } on GoogleSignInException catch (error) {
+      if (error.code != GoogleSignInExceptionCode.canceled && mounted) {
+        setState(() => _errorMessage = error.description ?? error.code.name);
+      }
+    } on Exception catch (error) {
+      if (mounted) setState(() => _errorMessage = error.toString());
+    } finally {
+      if (mounted) setState(() => _isSigningIn = false);
+    }
   }
 
   @override
@@ -104,7 +142,28 @@ class _LoginScreenState extends State<LoginScreen> {
                       : null,
                 ),
                 const SizedBox(height: 22),
-                AppButton(label: 'Login', onPressed: _login),
+                if (_errorMessage != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.danger.withValues(alpha: .1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(
+                        color: AppColors.danger,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                AppButton(
+                  label: 'Login',
+                  onPressed: _isSigningIn ? null : _login,
+                ),
                 const SizedBox(height: 22),
                 const Row(
                   children: [
@@ -123,16 +182,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 AppButton(
                   label: 'Continue with Google',
                   icon: Icons.g_mobiledata,
-                  onPressed: _login,
+                  onPressed: _isSigningIn ? null : _loginWithGoogle,
                   outlined: true,
                 ),
+                if (_isSigningIn) ...[
+                  const SizedBox(height: 14),
+                  const CircularProgressIndicator(),
+                ],
                 const SizedBox(height: 24),
                 TextButton(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Registration will be available soon.'),
-                    ),
-                  ),
+                  onPressed: _isSigningIn
+                      ? null
+                      : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RegisterScreen(
+                              authRepository: widget.authRepository,
+                            ),
+                          ),
+                        ),
                   child: const Text.rich(
                     TextSpan(
                       text: "Don't have an account?  ",

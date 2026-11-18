@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../services/auth_repository.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_button.dart';
 import 'login_screen.dart';
 
 class SplashScreen extends StatelessWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({super.key, required this.authRepository});
+
+  final AuthRepository authRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +134,10 @@ class SplashScreen extends StatelessWidget {
                   label: 'Get Started',
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          LoginScreen(authRepository: authRepository),
+                    ),
                   ),
                   outlined: true,
                   foregroundColor: AppColors.white,

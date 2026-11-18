@@ -4,9 +4,16 @@ import '../../models/business_models.dart';
 import '../../theme/app_theme.dart';
 
 class OrderListTile extends StatelessWidget {
-  const OrderListTile({super.key, required this.order});
+  const OrderListTile({
+    super.key,
+    required this.order,
+    this.onEdit,
+    this.onDelete,
+  });
 
   final BusinessOrder order;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -95,8 +102,36 @@ class OrderListTile extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(width: 4),
-          const Icon(Icons.chevron_right, color: AppColors.muted, size: 18),
+          if (onEdit != null || onDelete != null)
+            PopupMenuButton<String>(
+              tooltip: 'Actions for ${order.customerName}',
+              onSelected: (action) {
+                if (action == 'edit') onEdit?.call();
+                if (action == 'delete') onDelete?.call();
+              },
+              itemBuilder: (context) => [
+                if (onEdit != null)
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                      dense: true,
+                      leading: Icon(Icons.edit_outlined),
+                      title: Text('Edit'),
+                    ),
+                  ),
+                if (onDelete != null)
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      dense: true,
+                      leading: Icon(Icons.delete_outline),
+                      title: Text('Delete'),
+                    ),
+                  ),
+              ],
+            )
+          else
+            const SizedBox(width: 4),
         ],
       ),
     );

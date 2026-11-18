@@ -8,12 +8,14 @@ class AppHeader extends StatelessWidget {
     required this.title,
     this.showBack = false,
     this.onBack,
+    this.onSignOut,
     this.trailing,
   });
 
   final String title;
   final bool showBack;
   final VoidCallback? onBack;
+  final Future<void> Function()? onSignOut;
   final Widget? trailing;
 
   @override
@@ -50,9 +52,13 @@ class AppHeader extends StatelessWidget {
           ),
           trailing ??
               IconButton(
-                onPressed: () {},
+                onPressed: onSignOut,
                 icon: Icon(
-                  showBack ? Icons.more_horiz : Icons.notifications_none,
+                  showBack
+                      ? Icons.more_horiz
+                      : onSignOut == null
+                      ? Icons.notifications_none
+                      : Icons.logout,
                   color: AppColors.white,
                 ),
               ),

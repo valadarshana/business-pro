@@ -4,9 +4,16 @@ import '../../models/business_models.dart';
 import '../../theme/app_theme.dart';
 
 class ExpenseListTile extends StatelessWidget {
-  const ExpenseListTile({super.key, required this.expense});
+  const ExpenseListTile({
+    super.key,
+    required this.expense,
+    this.onEdit,
+    this.onDelete,
+  });
 
   final BusinessExpense expense;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +74,34 @@ class ExpenseListTile extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
+          if (onEdit != null || onDelete != null)
+            PopupMenuButton<String>(
+              tooltip: 'Actions for ${expense.title}',
+              onSelected: (action) {
+                if (action == 'edit') onEdit?.call();
+                if (action == 'delete') onDelete?.call();
+              },
+              itemBuilder: (context) => [
+                if (onEdit != null)
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                      dense: true,
+                      leading: Icon(Icons.edit_outlined),
+                      title: Text('Edit'),
+                    ),
+                  ),
+                if (onDelete != null)
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      dense: true,
+                      leading: Icon(Icons.delete_outline),
+                      title: Text('Delete'),
+                    ),
+                  ),
+              ],
+            ),
         ],
       ),
     );
