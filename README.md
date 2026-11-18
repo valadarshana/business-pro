@@ -1,17 +1,27 @@
-# business_pro
+# Business Pro
 
-Business management
+A Flutter business-management UI prototype for orders, expenses, and dashboard
+summaries.
 
-## Getting Started
+## Project structure
 
-This project is a starting point for a Flutter application.
+- `lib/ui/screens/` contains one file per screen.
+- `lib/ui/widgets/` contains shared fields, buttons, navigation, cards, and list
+  components.
+- `lib/theme/app_theme.dart` centralizes the color palette and shared theme.
+- `lib/models/business_models.dart` defines order and expense data models.
+- `lib/state/business_state.dart` owns in-memory business data, filters, and
+  derived dashboard values using Flutter's `ChangeNotifier`.
+- `lib/app/business_pro_app.dart` initializes and provides the shared state.
 
-A few resources to get you started if this is your first Flutter project:
+Orders and expenses can be added from their list screens. The lists, category
+and status filters, and dashboard totals update from shared app state. Data is
+currently held in memory and resets when the app restarts.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Run and test
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```sh
+flutter pub get
+flutter run
+flutter test
+```
