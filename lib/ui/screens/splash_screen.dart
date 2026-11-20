@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_strings.dart';
 import '../../services/auth_repository.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/app_button.dart';
@@ -41,7 +42,7 @@ class SplashScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Business Pro',
+                  AppStrings.appName,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: AppColors.white,
                     fontSize: 25,

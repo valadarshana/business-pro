@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/business_models.dart';
 import '../../providers/expense_providers.dart';
+import '../../providers/monthly_profit_loss_providers.dart';
 import '../../providers/order_providers.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/metric_card.dart';
 import '../widgets/order_list_tile.dart';
+import 'monthly_profit_loss_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({
@@ -24,6 +26,14 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ordersAsync = ref.watch(ordersProvider);
     final expensesAsync = ref.watch(expensesProvider);
+    final monthlyReportsAsync = ref.watch(monthlyProfitLossProvider);
+    final now = DateTime.now();
+    final currentMonthReport = monthlyReportsAsync.whenOrNull(
+      data: (reports) => reports.firstWhere(
+        (report) =>
+            report.month.year == now.year && report.month.month == now.month,
+      ),
+    );
     final totalExpenses = expensesAsync.whenOrNull(
       data: (expenses) =>
           expenses.fold<double>(0, (total, expense) => total + expense.amount),
@@ -32,10 +42,6 @@ class DashboardScreen extends ConsumerWidget {
       data: (orders) => orders
           .where((order) => order.status == OrderStatus.completed)
           .fold<double>(0, (total, order) => total + order.total),
-    );
-    final pendingCount = ordersAsync.whenOrNull(
-      data: (orders) =>
-          orders.where((order) => order.status == OrderStatus.pending).length,
     );
     final metrics = [
       (
@@ -64,11 +70,15 @@ class DashboardScreen extends ConsumerWidget {
         accent: AppColors.blue,
       ),
       (
-        icon: Icons.pending_actions_outlined,
-        title: 'Pending Orders',
-        value: pendingCount?.toString() ?? '—',
-        tint: AppColors.pendingTint,
-        accent: AppColors.warning,
+        icon: Icons.calendar_month_outlined,
+        title: 'Monthly P&L',
+        value: currentMonthReport == null
+            ? '—'
+            : _formatNet(currentMonthReport.net),
+        tint: AppColors.profitTint,
+        accent: currentMonthReport != null && currentMonthReport.net < 0
+            ? AppColors.danger
+            : AppColors.blue,
       ),
     ];
 
@@ -161,6 +171,14 @@ class DashboardScreen extends ConsumerWidget {
                       value: metrics[index].value,
                       tint: metrics[index].tint,
                       accent: metrics[index].accent,
+                      onTap: index == 3
+                          ? () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const MonthlyProfitLossScreen(),
+                              ),
+                            )
+                          : null,
                     ),
                   ),
                   if (expensesAsync.hasError) ...[
@@ -227,6 +245,13 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _formatNet(double amount) {
+  final value = formatCurrency(amount.abs());
+  if (amount < 0) return '-$value loss';
+  if (amount > 0) return '$value profit';
+  return value;
 }
 
 class _DashboardOrdersError extends StatelessWidget {

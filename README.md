@@ -41,6 +41,9 @@ calculated from quantity and price per item; there is no amount-paid field.
 Expenses are stored at `users/{uid}/expenses`; the expense list and dashboard
 totals use the live Riverpod stream. Expenses can be added, edited, and deleted
 from the Expenses list, with confirmation required before deletion.
+The dashboard's monthly P&L uses completed orders as income and expenses
+recorded in each calendar month. Tap the monthly P&L card to see current and
+previous months, including loss months.
 
 ## Firebase and Google sign-in setup
 

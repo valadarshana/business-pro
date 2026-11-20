@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../app/app_strings.dart';
 import '../../services/auth_repository.dart';
 import '../../services/auth_error_message.dart';
 import '../../theme/app_theme.dart';
@@ -98,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Business Pro',
+                  AppStrings.appName,
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 6),
@@ -164,59 +165,59 @@ class _LoginScreenState extends State<LoginScreen> {
                   label: 'Login',
                   onPressed: _isSigningIn ? null : _login,
                 ),
-                const SizedBox(height: 22),
-                const Row(
-                  children: [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(
-                        'or',
-                        style: TextStyle(color: AppColors.muted),
-                      ),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                AppButton(
-                  label: 'Continue with Google',
-                  icon: Icons.g_mobiledata,
-                  onPressed: _isSigningIn ? null : _loginWithGoogle,
-                  outlined: true,
-                ),
-                if (_isSigningIn) ...[
-                  const SizedBox(height: 14),
-                  const CircularProgressIndicator(),
-                ],
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: _isSigningIn
-                      ? null
-                      : () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => RegisterScreen(
-                              authRepository: widget.authRepository,
-                            ),
-                          ),
-                        ),
-                  child: const Text.rich(
-                    TextSpan(
-                      text: "Don't have an account?  ",
-                      style: TextStyle(color: AppColors.muted, fontSize: 12),
-                      children: [
-                        TextSpan(
-                          text: 'Register',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                // const SizedBox(height: 22),
+                // const Row(
+                //   children: [
+                //     Expanded(child: Divider()),
+                //     Padding(
+                //       padding: EdgeInsets.symmetric(horizontal: 10),
+                //       child: Text(
+                //         'or',
+                //         style: TextStyle(color: AppColors.muted),
+                //       ),
+                //     ),
+                //     Expanded(child: Divider()),
+                //   ],
+                // ),
+                // const SizedBox(height: 18),
+                // AppButton(
+                //   label: 'Continue with Google',
+                //   icon: Icons.g_mobiledata,
+                //   onPressed: _isSigningIn ? null : _loginWithGoogle,
+                //   outlined: true,
+                // ),
+                // if (_isSigningIn) ...[
+                //   const SizedBox(height: 14),
+                //   const CircularProgressIndicator(),
+                // ],
+                // const SizedBox(height: 24),
+                // TextButton(
+                //   onPressed: _isSigningIn
+                //       ? null
+                //       : () => Navigator.push(
+                //           context,
+                //           MaterialPageRoute(
+                //             builder: (_) => RegisterScreen(
+                //               authRepository: widget.authRepository,
+                //             ),
+                //           ),
+                //         ),
+                //   child: const Text.rich(
+                //     TextSpan(
+                //       text: "Don't have an account?  ",
+                //       style: TextStyle(color: AppColors.muted, fontSize: 12),
+                //       children: [
+                //         TextSpan(
+                //           text: 'Register',
+                //           style: TextStyle(
+                //             color: AppColors.primary,
+                //             fontWeight: FontWeight.w700,
+                //           ),
+                //         ),
+                //       ],
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),

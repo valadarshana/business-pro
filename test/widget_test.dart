@@ -11,11 +11,13 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:business_pro/main.dart';
+import 'package:business_pro/app/app_strings.dart';
 import 'package:business_pro/models/auth_user.dart';
 import 'package:business_pro/models/business_models.dart';
 import 'package:business_pro/repositories/expense_repository.dart';
 import 'package:business_pro/repositories/order_repository.dart';
 import 'package:business_pro/services/auth_repository.dart';
+import 'package:business_pro/ui/screens/monthly_profit_loss_screen.dart';
 import 'package:business_pro/ui/widgets/metric_card.dart';
 
 void main() {
@@ -35,7 +37,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Business Pro'), findsOneWidget);
+    expect(find.text(AppStrings.appName), findsOneWidget);
     expect(find.text('Get Started'), findsOneWidget);
   });
 
@@ -209,9 +211,10 @@ void main() {
     expect(find.text('Riya Sharma'), findsNothing);
   });
 
-  testWidgets('Dashboard metrics and recent orders follow Firestore updates', (
+  testWidgets('Dashboard metrics and monthly profit follow Firestore updates', (
     WidgetTester tester,
   ) async {
+    final now = DateTime.now();
     final orders = FakeOrderRepository();
     final expenses = FakeExpenseRepository();
     addTearDown(orders.dispose);
@@ -227,11 +230,12 @@ void main() {
     );
     expect(
       find.descendant(
-        of: find.widgetWithText(MetricCard, 'Pending Orders'),
-        matching: find.text('1'),
+        of: find.widgetWithText(MetricCard, 'Monthly P&L'),
+        matching: find.text('₹ 600 profit'),
       ),
       findsOneWidget,
     );
+    expect(find.text('Pending Orders'), findsNothing);
     expect(
       find.descendant(
         of: find.widgetWithText(MetricCard, 'Total Expenses'),
@@ -275,7 +279,7 @@ void main() {
         amount: 250,
         description: '',
         paymentMethod: 'Cash',
-        date: DateTime(2026, 11, 18),
+        date: now,
       ),
     );
     await tester.pumpAndSettle();
@@ -293,6 +297,37 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(
+      find.descendant(
+        of: find.widgetWithText(MetricCard, 'Monthly P&L'),
+        matching: find.text('₹ 950 profit'),
+      ),
+      findsOneWidget,
+    );
+
+    await expenses.createExpense(
+      BusinessExpense(
+        id: '',
+        title: 'Prior Month Expense',
+        category: 'Other',
+        amount: 75,
+        description: '',
+        paymentMethod: 'Cash',
+        date: DateTime(now.year, now.month - 1, 10),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(MetricCard, 'Monthly P&L'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MonthlyProfitLossScreen), findsOneWidget);
+    expect(find.text('Monthly Profit & Loss'), findsOneWidget);
+    expect(
+      find.text(_monthLabel(DateTime(now.year, now.month - 1))),
+      findsOneWidget,
+    );
+    expect(find.text('Loss'), findsOneWidget);
+    expect(find.text('₹ 75'), findsOneWidget);
   });
 
   testWidgets('Google sign-in opens the authenticated app', (
@@ -567,6 +602,24 @@ Future<void> _loginAndOpenApp(
   await tester.pumpAndSettle();
 }
 
+String _monthLabel(DateTime month) {
+  const names = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return '${names[month.month - 1]} ${month.year}';
+}
+
 class FakeOrderRepository implements OrderRepository {
   FakeOrderRepository()
     : _orders = [
@@ -577,7 +630,7 @@ class FakeOrderRepository implements OrderRepository {
           productName: 'Candle',
           quantity: 2,
           total: 2500,
-          date: DateTime(2024, 11, 18),
+          date: DateTime.now(),
           status: OrderStatus.pending,
           paymentStatus: PaymentStatus.unpaid,
         ),
@@ -588,7 +641,7 @@ class FakeOrderRepository implements OrderRepository {
           productName: 'Candle',
           quantity: 1,
           total: 1800,
-          date: DateTime(2024, 11, 17),
+          date: DateTime.now().subtract(const Duration(days: 1)),
           status: OrderStatus.completed,
           paymentStatus: PaymentStatus.paid,
         ),
@@ -665,7 +718,7 @@ class FakeExpenseRepository implements ExpenseRepository {
           amount: 1200,
           description: 'Supplies',
           paymentMethod: 'Cash',
-          date: DateTime(2026, 11, 18),
+          date: DateTime.now(),
         ),
       ];
 

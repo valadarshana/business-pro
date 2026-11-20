@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'app_strings.dart';
 import '../models/auth_user.dart';
 import '../providers/expense_providers.dart';
 import '../providers/order_providers.dart';
@@ -54,7 +55,7 @@ class _BusinessProAppState extends State<BusinessProApp> {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Business Pro',
+        title: AppStrings.appName,
         theme: AppTheme.light,
         home: widget.authRepository != null
             ? AuthGate(authRepository: widget.authRepository!)
